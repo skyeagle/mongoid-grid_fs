@@ -1,5 +1,8 @@
 ##
 #
+require 'digest'
+require 'moped'
+
   module Mongoid
     class GridFS
       const_set :Version, '1.7.0'
@@ -82,7 +85,7 @@
             []=
             clear
           )
-          
+
           to_delegate.each do |method|
             class_eval <<-__
               def self.#{ method }(*args, &block)
@@ -164,6 +167,8 @@
             if attributes.has_key?(:_id)
               file.id = attributes.delete(:_id)
             end
+
+            file.id ||= Digest::SHA1.hexdigest(::Moped::BSON::ObjectId.new.to_s)
 
             if attributes.has_key?(:content_type)
               attributes[:contentType] = attributes.delete(:content_type)
@@ -311,6 +316,7 @@
           self.defaults.chunkSize = 4 * (mb = 2**20)
           self.defaults.contentType = 'application/octet-stream'
 
+          field :_id, type: String
           field(:filename, :type => String)
           field(:contentType, :type => String, :default => defaults.contentType)
 
@@ -326,7 +332,7 @@
 
           has_many(:chunks, :class_name => chunk_model_name, :inverse_of => :files, :dependent => :destroy, :order => [:n, :asc])
 
-          index({:filename => 1}, :unique => true) 
+          index({:filename => 1}, :unique => true)
 
           def path
             filename
@@ -406,7 +412,7 @@
             contentType
           end
 
-          def update_date 
+          def update_date
             updateDate
           end
 
@@ -445,7 +451,7 @@
 
           belongs_to(:file, :foreign_key => :files_id, :class_name => file_model_name)
 
-          index({:files_id => 1, :n => -1}, :unique => true) 
+          index({:files_id => 1, :n => -1}, :unique => true)
 
           def namespace
             self.class.namespace
