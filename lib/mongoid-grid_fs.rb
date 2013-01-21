@@ -53,6 +53,7 @@ require 'moped'
       end
 
       require "digest/md5"
+      require "digest/crc32"
       require "cgi"
     end
   end
@@ -179,6 +180,7 @@ require 'moped'
             end
 
             md5 = Digest::MD5.new
+            crc32 = Digest::CRC32.new
             length = 0
             chunkSize = file.chunkSize
             n = 0
@@ -195,6 +197,7 @@ require 'moped'
 
               GridFS.chunking(io, chunkSize) do |buf|
                 md5 << buf
+                crc32 << buf
                 length += buf.size
                 chunk = file.chunks.build
                 chunk.data = binary_for(buf)
@@ -209,6 +212,7 @@ require 'moped'
             attributes[:length] ||= length
             attributes[:uploadDate] ||= Time.now.utc
             attributes[:md5] ||= md5.hexdigest
+            attributes[:crc32] ||= crc32.hexdigest
 
             file.update_attributes(attributes)
 
@@ -324,8 +328,9 @@ require 'moped'
           field(:chunkSize, :type => Integer, :default => defaults.chunkSize)
           field(:uploadDate, :type => Date, :default => Time.now.utc)
           field(:md5, :type => String, :default => Digest::MD5.hexdigest(''))
+          field(:crc32, :type => String, :default => Digest::CRC32.hexdigest(''))
 
-          %w( filename contentType length chunkSize uploadDate md5 ).each do |f|
+          %w( filename contentType length chunkSize uploadDate md5 crc32).each do |f|
             validates_presence_of(f)
           end
           validates_uniqueness_of(:filename)
