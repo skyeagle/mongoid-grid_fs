@@ -179,9 +179,9 @@ require 'moped'
               attributes[:uploadDate] = attributes.delete(:upload_date)
             end
 
-            md5 = Digest::MD5.new
-            crc32 = Digest::CRC32.new
-            length = 0
+            md5 = Digest::MD5.new unless attributes[:md5]
+            crc32 = Digest::CRC32.new unless attributes[:crc32]
+            length = 0 unless attributes[:length]
             chunkSize = file.chunkSize
             n = 0
 
@@ -196,9 +196,9 @@ require 'moped'
                   GridFS.extract_content_type(filename) || file.contentType
 
               GridFS.chunking(io, chunkSize) do |buf|
-                md5 << buf
-                crc32 << buf
-                length += buf.size
+                md5 << buf unless attributes[:md5]
+                crc32 << buf unless attributes[:crc32]
+                length += buf.size unless attributes[:length]
                 chunk = file.chunks.build
                 chunk.data = binary_for(buf)
                 chunk.n = n
